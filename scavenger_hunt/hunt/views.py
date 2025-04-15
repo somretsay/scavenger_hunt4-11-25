@@ -1922,117 +1922,80 @@ def race_complete(request):
         'player_name': player_name
     })
 
+@login_required
 def race_questions(request, race_id):
     """View for participants to see and answer questions during a race"""
-    # Get race and check if it's active
     race = get_object_or_404(Race, id=race_id)
-
-    # Get the first lobby this team is part of that's using this race
-    lobby = Lobby.objects.filter(race=race, teams=team).first()
-
-    # Fallback if no lobby
-    start_time = lobby.start_time if lobby and lobby.start_time else timezone.now()
-
-    # Process query parameters first
     team_code = request.GET.get('team_code')
     player_name_param = request.GET.get('player_name')
     
-    # Get player name from session or query parameter
+    # Get or save player name to session
     player_name = request.session.get('player_name') or player_name_param
-    
-    # If player name is in the query, save it to the session for future use
     if player_name_param and not request.session.get('player_name'):
         request.session['player_name'] = player_name_param
-    
-    # Check if we have a player name
+
     if not player_name:
-        # If no player name, show join form with team code populated if provided
         return render(request, 'hunt/race_questions.html', {
             'show_join_form': True,
             'race': race,
             'team_code_prefill': team_code
         })
-    
-    # Try to find the team - first from the team_code parameter, then from session
+
+    # 🧠 Step 1: Get the team
     team = None
     if team_code:
-        try:
-            team = Team.objects.get(code=team_code)
-            # Save team_id to session for future use
+        team = Team.objects.filter(code=team_code).first()
+        if team:
             request.session['team_id'] = team.id
-        except Team.DoesNotExist:
-                pass
-    
-    # If no team from parameter, try from session
+
     if not team:
         team_id = request.session.get('team_id')
         if team_id:
-            try:
-                team = Team.objects.get(id=team_id)
-            except Team.DoesNotExist:
-                pass
-    
-    # If still no team, check if player is in any team
+            team = Team.objects.filter(id=team_id).first()
+
     if not team:
-        try:
-            team_member = TeamMember.objects.filter(role=player_name).first()
-            if team_member:
-                team = team_member.team
-                # Save team_id to session
-                request.session['team_id'] = team.id
-        except Exception as e:
-            print(f"Error finding team: {e}")
-    
-    # If no team found at all, show join form
+        member = TeamMember.objects.filter(role=player_name).first()
+        if member:
+            team = member.team
+            request.session['team_id'] = team.id
+
     if not team:
         return render(request, 'hunt/race_questions.html', {
             'show_join_form': True,
             'race': race,
             'error': 'Could not find a team for you. Please join a team first.'
         })
-    
-    # Find or create team member
-    try:
-        team_member = TeamMember.objects.get(team=team, role=player_name)
-    except TeamMember.DoesNotExist:
-        # Create a team member entry
-        team_member = TeamMember.objects.create(team=team, role=player_name)
-        print(f"Created new team member {player_name} for team {team.name}")
-    
-    # Get zones and questions for this race
+
+    # 🧠 Step 2: Get the lobby and start_time
+    lobby = Lobby.objects.filter(race=race, teams=team).first()
+    start_time = lobby.start_time if lobby and lobby.start_time else timezone.now()
+
+    # 🧠 Step 3: Ensure the player is a TeamMember
+    team_member, created = TeamMember.objects.get_or_create(team=team, role=player_name)
+
+    # 🧠 Step 4: Prepare zone/question data
     zones = Zone.objects.filter(race=race).order_by('created_at')
     questions = Question.objects.filter(zone__race=race).select_related('zone').order_by('zone__created_at')
-    
-    # Group questions by zone
-    questions_by_zone = {}
-    for zone in zones:
-        questions_by_zone[zone.id] = []
-    
+
+    questions_by_zone = {zone.id: [] for zone in zones}
     for question in questions:
         questions_by_zone[question.zone.id].append(question)
-    
-    # Get existing team answers
+
     team_answers = TeamAnswer.objects.filter(team=team, question__zone__race=race)
-    
-    # Organize answers by question ID for easy lookup
-    answers_by_question = {}
-    for answer in team_answers:
-        answers_by_question[answer.question_id] = {
+    answers_by_question = {
+        answer.question_id: {
             'answered_correctly': answer.answered_correctly,
             'attempts': answer.attempts,
             'points_awarded': answer.points_awarded,
             'photo_uploaded': answer.photo_uploaded
         }
-    
-    # Get team race progress
+        for answer in team_answers
+    }
+
     team_race_progress = TeamRaceProgress.objects.filter(team=team, race=race).first()
-    current_question_index = 0
-    total_points = 0
-    
-    if team_race_progress:
-        current_question_index = team_race_progress.current_question_index
-        total_points = team_race_progress.total_points
-    
+    current_question_index = team_race_progress.current_question_index if team_race_progress else 0
+    total_points = team_race_progress.total_points if team_race_progress else 0
+
     context = {
         'race': race,
         'team': team,
@@ -2042,13 +2005,12 @@ def race_questions(request, race_id):
         'answers_by_question': answers_by_question,
         'current_question_index': current_question_index,
         'total_points': total_points,
-        'start_time': race.start_time.isoformat() if race.start_time else timezone.now().isoformat(),
-         # fallback to 20 if missing
-        'start_time': start_time.isoformat(),
-        'time_limit_minutes': race.time_limit_minutes,
+        'start_time': start_time.isoformat(),  # 🕒 for the timer
+        'time_limit_minutes': race.time_limit_minutes,  # ⏱️ for the timer
     }
-    
+
     return render(request, 'hunt/race_questions.html', context)
+
 
 def check_race_status(request, race_id):
     """Check if the race has started - called by client-side polling"""
