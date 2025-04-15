@@ -1122,13 +1122,11 @@ function getCookie(name) {
 }
 
 
-
 document.addEventListener("DOMContentLoaded", function () {
-    const startTime = new Date("{{ start_time }}");
-    const timeLimitMinutes = { time_limit_minutes };
+    const startTime = new Date("{{ start_time|safe }}");
+    const timeLimitMinutes = {{ time_limit_minutes|default:20 }};
     const endTime = new Date(startTime.getTime() + timeLimitMinutes * 60000);
     const timerDisplay = document.getElementById("race-timer");
-
     let fiveMinuteWarningShown = false;
 
     function updateTimer() {
@@ -1138,24 +1136,24 @@ document.addEventListener("DOMContentLoaded", function () {
         const minutes = Math.floor(remainingSeconds / 60);
         const seconds = remainingSeconds % 60;
 
-        // Update the visible timer
+        // 🕒 Update timer on page
         timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-        // Show warning at 5 minutes
+        // ⚠️ Popup warning at 5 minutes
         if (!fiveMinuteWarningShown && remainingSeconds <= 300 && remainingSeconds > 0) {
-            alert("⏳ Only 5 minutes left! Hurry up!");
+            alert("⏳ Only 5 minutes left! Finish strong!");
             fiveMinuteWarningShown = true;
         }
 
-        // Redirect when time is up
+        // ⏰ Redirect when time runs out
         if (remainingSeconds <= 0) {
             clearInterval(timerInterval);
-            alert("⏰ Time's up! Redirecting to race complete page...");
+            alert("⏰ Time's up! Redirecting to race completion page...");
             window.location.href = `/race/{{ race.id }}/complete/`;
         }
     }
 
-    // Start the countdown
+    // Start ticking
     updateTimer();
     const timerInterval = setInterval(updateTimer, 1000);
 });
