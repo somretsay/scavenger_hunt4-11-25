@@ -1941,7 +1941,7 @@ def race_questions(request, race_id):
             'team_code_prefill': team_code
         })
 
-    # 🧠 Step 1: Get the team
+    #  Step 1: Get the team
     team = None
     if team_code:
         team = Team.objects.filter(code=team_code).first()
@@ -1966,14 +1966,14 @@ def race_questions(request, race_id):
             'error': 'Could not find a team for you. Please join a team first.'
         })
 
-    # 🧠 Step 2: Get the lobby and start_time
+    #  Step 2: Get the lobby and start_time
     lobby = Lobby.objects.filter(race=race, teams=team).first()
     start_time = lobby.start_time if lobby and lobby.start_time else timezone.now()
 
-    # 🧠 Step 3: Ensure the player is a TeamMember
+    # Step 3: Ensure the player is a TeamMember
     team_member, created = TeamMember.objects.get_or_create(team=team, role=player_name)
 
-    # 🧠 Step 4: Prepare zone/question data
+    #  Step 4: Prepare zone/question data
     zones = Zone.objects.filter(race=race).order_by('created_at')
     questions = Question.objects.filter(zone__race=race).select_related('zone').order_by('zone__created_at')
 
@@ -2005,7 +2005,7 @@ def race_questions(request, race_id):
         'answers_by_question': answers_by_question,
         'current_question_index': current_question_index,
         'total_points': total_points,
-        'start_time': start_time.isoformat(),  # 🕒 for the timer
+        'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
         'time_limit_minutes': race.time_limit_minutes,  # ⏱️ for the timer
     }
 
