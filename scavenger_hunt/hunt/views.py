@@ -1922,7 +1922,7 @@ def race_complete(request):
         'player_name': player_name
     })
 
-@login_required
+
 def race_questions(request, race_id):
     """View for participants to see and answer questions during a race"""
     race = get_object_or_404(Race, id=race_id)
