@@ -1926,7 +1926,13 @@ def race_questions(request, race_id):
     """View for participants to see and answer questions during a race"""
     # Get race and check if it's active
     race = get_object_or_404(Race, id=race_id)
-    
+
+    # Get the first lobby this team is part of that's using this race
+    lobby = Lobby.objects.filter(race=race, teams=team).first()
+
+    # Fallback if no lobby
+    start_time = lobby.start_time if lobby and lobby.start_time else timezone.now()
+
     # Process query parameters first
     team_code = request.GET.get('team_code')
     player_name_param = request.GET.get('player_name')
@@ -2037,7 +2043,9 @@ def race_questions(request, race_id):
         'current_question_index': current_question_index,
         'total_points': total_points,
         'start_time': race.start_time.isoformat() if race.start_time else timezone.now().isoformat(),
-        'time_limit_minutes': race.time_limit_minutes or 20  # fallback to 20 if missing
+         # fallback to 20 if missing
+        'start_time': start_time.isoformat(),
+        'time_limit_minutes': race.time_limit_minutes,
     }
     
     return render(request, 'hunt/race_questions.html', context)
