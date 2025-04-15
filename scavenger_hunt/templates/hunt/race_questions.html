@@ -1136,16 +1136,16 @@ document.addEventListener("DOMContentLoaded", function () {
         const minutes = Math.floor(remainingSeconds / 60);
         const seconds = remainingSeconds % 60;
 
-        // 🕒 Update timer on page
+        //  Update timer on page
         timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-        // ⚠️ Popup warning at 5 minutes
+        //  Popup warning at 5 minutes
         if (!fiveMinuteWarningShown && remainingSeconds <= 300 && remainingSeconds > 0) {
             alert("⏳ Only 5 minutes left! Finish strong!");
             fiveMinuteWarningShown = true;
         }
 
-        // ⏰ Redirect when time runs out
+        //  Redirect when time runs out
         if (remainingSeconds <= 0) {
             clearInterval(timerInterval);
             alert("⏰ Time's up! Redirecting to race completion page...");
