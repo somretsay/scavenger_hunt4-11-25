@@ -1149,7 +1149,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (remainingSeconds <= 0) {
             clearInterval(timerInterval);
             alert("⏰ Time's up! Redirecting to race completion page...");
-            window.location.href = `/race/{{ race.id }}/complete/`;
+            window.location.href = "{% url 'race_complete' %}";
         }
     }
 
