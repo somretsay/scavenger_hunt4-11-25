@@ -9,13 +9,15 @@
     <div class="dashboard-box p-4">
         <div class="row">
             <div class="col-12">
+                <div id="race-timer-container" style="text-align:center; margin-top: 20px;">
+                    <h2 style="color: red;">⏱️ Time Left: <span id="race-timer">--:--</span></h2>
+                </div>                  
                 {% if show_join_form %}
                     <div class="text-center mb-4">
                         <h1>Join Race</h1>
                         {% if error %}
                             <div class="alert alert-danger">{{ error }}</div>
                         {% endif %}
-                        
                         <div class="join-form-container">
                             <form action="" method="get" class="join-race-form">
                                 <div class="form-group mb-4">
@@ -1120,32 +1122,43 @@ function getCookie(name) {
 }
 
 
+
 document.addEventListener("DOMContentLoaded", function () {
     const startTime = new Date("{{ start_time }}");
     const timeLimitMinutes = { time_limit_minutes };
     const endTime = new Date(startTime.getTime() + timeLimitMinutes * 60000);
+    const timerDisplay = document.getElementById("race-timer");
 
     let fiveMinuteWarningShown = false;
 
-    function checkTimeRemaining() {
+    function updateTimer() {
         const now = new Date();
         const remainingMs = endTime - now;
-        const remainingMinutes = Math.floor(remainingMs / 60000);
+        const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+        const minutes = Math.floor(remainingSeconds / 60);
+        const seconds = remainingSeconds % 60;
 
-        if (remainingMinutes === 5 && !fiveMinuteWarningShown) {
-            alert("⏳ Only 5 minutes left! Make sure to finish your questions.");
+        // Update the visible timer
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        // Show warning at 5 minutes
+        if (!fiveMinuteWarningShown && remainingSeconds <= 300 && remainingSeconds > 0) {
+            alert("⏳ Only 5 minutes left! Hurry up!");
             fiveMinuteWarningShown = true;
         }
 
-        // Optional: redirect or freeze form if time expires
-        if (remainingMs <= 0) {
-            alert("⏰ Time is up! You will now be redirected to the race completion page.");
+        // Redirect when time is up
+        if (remainingSeconds <= 0) {
+            clearInterval(timerInterval);
+            alert("⏰ Time's up! Redirecting to race complete page...");
             window.location.href = `/race/{{ race.id }}/complete/`;
         }
     }
 
-    // Check every 10 seconds
-    setInterval(checkTimeRemaining, 10000);
+    // Start the countdown
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
 });
 </script>
+
 {% endblock %} 
