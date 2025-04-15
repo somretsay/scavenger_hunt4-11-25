@@ -2035,7 +2035,9 @@ def race_questions(request, race_id):
         'questions_by_zone': questions_by_zone,
         'answers_by_question': answers_by_question,
         'current_question_index': current_question_index,
-        'total_points': total_points
+        'total_points': total_points,
+        'start_time': race.start_time.isoformat() if race.start_time else timezone.now().isoformat(),
+        'time_limit_minutes': race.time_limit_minutes or 20  # fallback to 20 if missing
     }
     
     return render(request, 'hunt/race_questions.html', context)
