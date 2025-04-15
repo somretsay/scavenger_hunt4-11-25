@@ -1118,5 +1118,34 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    const startTime = new Date("{{ start_time }}");
+    const timeLimitMinutes = { time_limit_minutes };
+    const endTime = new Date(startTime.getTime() + timeLimitMinutes * 60000);
+
+    let fiveMinuteWarningShown = false;
+
+    function checkTimeRemaining() {
+        const now = new Date();
+        const remainingMs = endTime - now;
+        const remainingMinutes = Math.floor(remainingMs / 60000);
+
+        if (remainingMinutes === 5 && !fiveMinuteWarningShown) {
+            alert("⏳ Only 5 minutes left! Make sure to finish your questions.");
+            fiveMinuteWarningShown = true;
+        }
+
+        // Optional: redirect or freeze form if time expires
+        if (remainingMs <= 0) {
+            alert("⏰ Time is up! You will now be redirected to the race completion page.");
+            window.location.href = `/race/{{ race.id }}/complete/`;
+        }
+    }
+
+    // Check every 10 seconds
+    setInterval(checkTimeRemaining, 10000);
+});
 </script>
 {% endblock %} 
